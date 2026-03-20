@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Colorization Results</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#0f172a] text-white min-h-screen flex flex-col items-center justify-center p-8 space-y-6">
+    <h1 class="text-4xl font-bold text-green-400">Colorized Satellite Image</h1>
+
+    <div class="flex flex-col md:flex-row gap-12 items-center">
+        {% if original_image %}
+        <div class="text-center">
+            <h2 class="text-xl font-semibold mb-2">Original</h2>
+            <img src="{{ url_for('static', path='uploads/' + original_image) }}"
+                 alt="Original Image" 
+                 class="rounded-xl w-[256px] h-auto shadow-lg">
+        </div>
+        {% endif %}
+
+        <div class="text-center">
+            <h2 class="text-xl font-semibold mb-2">Colorized</h2>
+            <img src="{{ url_for('static', path=colorized_image) }}"
+                 alt="Colorized Image" class="rounded-xl w-[256px] h-auto shadow-lg">
+        </div>
+    </div>
+
+    <div id="status" class="mt-2 hidden"></div>
+
+    <div class="flex flex-wrap justify-center gap-6 mt-6">
+        <a href="{{ url_for('static', path=colorized_image) }}" download
+           class="bg-green-600 hover:bg-green-700 px-5 py-2 rounded-lg text-white font-medium shadow">
+            Download Colorized Image
+        </a>
+        <button id="segmentBtn"
+                class="bg-blue-600 hover:bg-blue-700 px-5 py-2 rounded-lg text-white font-medium shadow">
+            Segment Colorized Image
+        </button>
+    </div>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const segmentBtn = document.getElementById('segmentBtn');
+        
+        segmentBtn.addEventListener('click', function() {
+            // FIX: Ensure Jinja variable is quoted correctly
+            const colorizedFilename = "{{ colorized_image }}";
+            
+            const formData = new FormData();
+            formData.append('image_filename', colorizedFilename);
+            
+            const statusDiv = document.getElementById('status');
+            if (statusDiv) {
+                statusDiv.textContent = "Processing segmentation...";
+                statusDiv.classList.remove('hidden');
+                statusDiv.classList.add('text-blue-400');
+            }
+            
+            // Note: This route (/segment_colorized) must exist in main.py for this to work
+            fetch('/segment_colorized', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.redirect) {
+                    window.location.href = data.redirect;
+                } else if (data.error) {
+                    throw new Error(data.error);
+                } else {
+                    throw new Error("Unknown error occurred");
+                }
+            })
+            .catch(error => {
+                if (statusDiv) {
+                    statusDiv.textContent = "Error: " + error.message;
+                    statusDiv.classList.remove('text-blue-400');
+                    statusDiv.classList.add('text-red-400');
+                }
+            });
+        });
+    });
+    </script>
+</body>
+</html>

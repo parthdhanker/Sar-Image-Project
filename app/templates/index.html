@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>colourIT - Satellite Image Colorization</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body, html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow-x: hidden;
+        overflow-y: auto;
+        font-family: 'Inter', sans-serif;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 1;
+    }
+
+    .content {
+      position: relative;
+      z-index: 2;
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    #mapPreview {
+      width: 256px;
+      height: 256px;
+      object-fit: cover;
+    }
+  </style>
+</head>
+
+<body class="relative text-white font-sans">
+  <video autoplay muted loop playsinline class="absolute w-full h-full object-cover z-[-1]">
+    <source src="{{ url_for('static', path='videos/landing_page.mp4') }}" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+
+  <div class="absolute top-0 left-0 w-full h-full bg-black bg-opacity-50 z-0"></div>
+
+  <div class="relative z-10 flex flex-col items-center justify-center h-screen text-center px-4">
+    <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold mb-4">
+      From Greyscale to Green
+    </h1>
+    <p class="text-lg sm:text-xl md:text-2xl max-w-2xl mb-6">
+      Colorize satellite images with AI precision.
+    </p>
+
+    <div class="flex flex-col sm:flex-row gap-4">
+      <a href="#upload" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition">
+        Upload Your Image
+      </a>
+      <a href="#learn" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-semibold py-3 px-6 rounded-lg border border-white transition">
+        Learn How It Works
+      </a>
+    </div>
+  </div>
+
+  <section id="upload" class="relative py-20 px-4 sm:px-10 bg-[#0b1d14] text-white scroll-mt-20">
+    <div class="max-w-3xl mx-auto text-center p-10 rounded-xl bg-black/50 shadow-2xl border border-white/10 backdrop-blur-md animate-fadeIn">
+      <h2 class="text-4xl font-bold mb-4">Upload Satellite Image</h2>
+      <p class="mb-6 text-lg text-white/80">Choose a Sentinel-1 or Sentinel-2 grayscale image to begin colorization and segmentation.</p>
+      
+      <form id="uploadForm" class="bg-black/30 p-6 rounded-xl shadow-inner border border-white/10 mb-8">
+        <input type="file" id="imageInput" name="image" accept="image/*" required 
+               class="mb-4 w-full p-3 rounded-lg border border-gray-500 text-white bg-[#1b2b22] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500">
+        <button type="button" id="uploadButton"
+                class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg transition transform hover:scale-105 duration-300 shadow-md">
+          Upload, Colorize & Segment
+        </button>
+        <div id="uploadError" class="mt-2 text-red-400 hidden"></div>
+      </form>
+
+      <div class="bg-black/30 p-6 rounded-xl shadow-inner border border-white/10">
+        <h3 class="text-xl font-semibold mb-4 text-green-400">Or Segment by Location</h3>
+        
+        <div class="flex flex-col sm:flex-row gap-4 mb-4">
+          <button type="button" id="currentLocationBtn"
+                  class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+            Use Current Location
+          </button>
+          <button type="button" id="manualLocationBtn"
+                  class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+            Enter Coordinates
+          </button>
+        </div>
+
+        <form id="manualLocationForm" class="hidden">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Latitude</label>
+              <input type="text" id="latitude" required
+                     class="w-full p-3 rounded-lg border border-gray-500 text-white bg-[#1b2b22] placeholder-gray-400"
+                     placeholder="e.g. 28.6139">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Longitude</label>
+              <input type="text" id="longitude" required
+                     class="w-full p-3 rounded-lg border border-gray-500 text-white bg-[#1b2b22] placeholder-gray-400"
+                     placeholder="e.g. 77.2090">
+            </div>
+          </div>
+          <div class="mb-4 hidden">
+            <img id="mapPreview" src="" alt="Map Preview" class="mx-auto rounded-lg border border-gray-600">
+          </div>
+          <button type="button" id="segmentManualBtn"
+                  class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg transition">
+            Segment This Location
+          </button>
+        </form>
+
+        <form id="currentLocationForm" class="hidden">
+          <div class="mb-4 p-3 bg-blue-900/20 rounded-lg">
+            <p id="locationStatus">Click "Use Current Location" to detect</p>
+          </div>
+          <div class="mb-4 hidden">
+            <img id="currentLocationPreview" src="" alt="Location Preview" class="mx-auto rounded-lg border border-gray-600">
+          </div>
+          <button type="button" id="segmentCurrentBtn"
+                  class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg transition">
+            Segment My Location
+          </button>
+        </form>
+        
+        <div id="errorMessage" class="mt-4 text-red-400 hidden"></div>
+      </div>
+    </div>
+  </section>
+  
+  <section id="learn" class="relative py-20 px-4 sm:px-10 bg-white text-black scroll-mt-20">
+    <div class="max-w-5xl mx-auto text-center p-10 rounded-xl bg-black/50 shadow-2xl border border-white/10 backdrop-blur-md animate-fadeIn">
+      <h2 class="text-4xl font-bold mb-6">How It Works</h2>
+      <p class="text-lg mb-12 text-white/80">A simple 3-step process powered by AI to colorize your grayscale satellite images.</p>
+  
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div class="bg-black/40 rounded-xl p-6 border border-white/10 shadow-md hover:shadow-xl transition duration-300 hover:scale-105">
+          <h3 class="text-xl font-semibold mb-2 text-green-400">1. Upload Image</h3>
+          <p class="text-white/70">Choose a Sentinel-1 or Sentinel-2 grayscale satellite image.</p>
+        </div>
+  
+        <div class="bg-black/40 rounded-xl p-6 border border-white/10 shadow-md hover:shadow-xl transition duration-300 hover:scale-105">
+          <h3 class="text-xl font-semibold mb-2 text-green-400">2. AI Colorization</h3>
+          <p class="text-white/70">Our AI model processes the image and restores realistic color tones.</p>
+        </div>
+  
+        <div class="bg-black/40 rounded-xl p-6 border border-white/10 shadow-md hover:shadow-xl transition duration-300 hover:scale-105">
+          <h3 class="text-xl font-semibold mb-2 text-green-400">3. Analyze & Download</h3>
+          <p class="text-white/70">View, analyze, or download your colorized satellite image instantly.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Upload Form Handling
+      const uploadButton = document.getElementById('uploadButton');
+      const imageInput = document.getElementById('imageInput');
+      const uploadError = document.getElementById('uploadError');
+
+      uploadButton.addEventListener('click', function() {
+        if (!imageInput.files || imageInput.files.length === 0) {
+          showError("Please select an image file", uploadError);
+          return;
+        }
+
+        const file = imageInput.files[0];
+        if (!file.type.match('image.*')) {
+          showError("Please select an image file (PNG, JPG)", uploadError);
+          return;
+        }
+
+        // Show loading state
+        uploadButton.disabled = true;
+        uploadButton.innerHTML = '<span class="animate-pulse">Processing...</span>';
+        uploadError.classList.add('hidden');
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        fetch('/upload', {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => {
+          if (!response.ok) {
+            return response.json().then(err => {
+              throw new Error(err.error || 'Upload failed');
+            });
+          }
+          return response.text();
+        })
+        .then(html => {
+          document.open();
+          document.write(html);
+          document.close();
+        })
+        .catch(error => {
+          showError(error.message, uploadError);
+          console.error('Upload error:', error);
+        })
+        .finally(() => {
+          uploadButton.disabled = false;
+          uploadButton.textContent = 'Upload, Colorize & Segment';
+        });
+      });
+
+      // Location Segmentation Handling
+      const currentLocationBtn = document.getElementById('currentLocationBtn');
+      const manualLocationBtn = document.getElementById('manualLocationBtn');
+      const currentLocationForm = document.getElementById('currentLocationForm');
+      const manualLocationForm = document.getElementById('manualLocationForm');
+      const errorMessage = document.getElementById('errorMessage');
+      const locationStatus = document.getElementById('locationStatus');
+      const segmentManualBtn = document.getElementById('segmentManualBtn');
+      const segmentCurrentBtn = document.getElementById('segmentCurrentBtn');
+
+      // Prevent form submission
+      document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+          e.preventDefault();
+        });
+      });
+
+      // Toggle between current location and manual input forms
+      currentLocationBtn.addEventListener('click', function() {
+        currentLocationBtn.classList.add('bg-blue-700');
+        manualLocationBtn.classList.remove('bg-purple-700');
+        currentLocationForm.classList.remove('hidden');
+        manualLocationForm.classList.add('hidden');
+        errorMessage.classList.add('hidden');
+        detectCurrentLocation();
+      });
+
+      manualLocationBtn.addEventListener('click', function() {
+        manualLocationBtn.classList.add('bg-purple-700');
+        currentLocationBtn.classList.remove('bg-blue-700');
+        manualLocationForm.classList.remove('hidden');
+        currentLocationForm.classList.add('hidden');
+        errorMessage.classList.add('hidden');
+      });
+
+      // Current location detection
+      function detectCurrentLocation() {
+        locationStatus.textContent = "Detecting your location...";
+        
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            function(position) {
+              const lat = position.coords.latitude;
+              const lng = position.coords.longitude;
+              locationStatus.textContent = `Location found: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+              
+              // Set up segment button
+              segmentCurrentBtn.onclick = function() {
+                processLocation(lat, lng, segmentCurrentBtn);
+              };
+            },
+            function(error) {
+              locationStatus.textContent = "Error getting location: " + error.message;
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+          );
+        } else {
+          locationStatus.textContent = "Geolocation is not supported by your browser";
+        }
+      }
+
+      // Manual location button handler
+      segmentManualBtn.addEventListener('click', function() {
+        const lat = document.getElementById('latitude').value;
+        const lng = document.getElementById('longitude').value;
+
+        if (!lat || !lng) {
+          showError("Please enter both latitude and longitude", errorMessage);
+          return;
+        }
+
+        processLocation(lat, lng, segmentManualBtn);
+      });
+
+      // Process location function
+      function processLocation(lat, lng, button) {
+        // Show loading state
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = '<span class="animate-pulse">Processing...</span>';
+        }
+        errorMessage.textContent = "Processing your request...";
+        errorMessage.classList.remove('hidden', 'text-red-400');
+        errorMessage.classList.add('text-blue-400');
+
+        const formData = new FormData();
+        // FIX: Match Python keys (lat, lng) instead of full names
+        formData.append('lat', lat);
+        formData.append('lng', lng);
+
+        fetch('/location_segment', {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => {
+          if (!response.ok) {
+            return response.json().then(err => { 
+              throw new Error(err.error || 'Server error'); 
+            });
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (data.success) {
+            // FIX: Python backend returns JSON, not a redirect.
+            // We create a result overlay on the fly to show the images.
+            const resultHTML = `
+              <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4">
+                  <div class="bg-[#0b1d14] p-6 rounded-xl max-w-4xl w-full border border-green-500 overflow-y-auto max-h-[90vh]">
+                      <h2 class="text-3xl font-bold text-white mb-6 text-center">Segmentation Results</h2>
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div class="bg-black/40 p-2 rounded">
+                              <h3 class="text-xl text-green-400 mb-2 text-center">Colorized</h3>
+                              <img src="/static/${data.colorized}" class="w-full rounded-lg border border-white/20">
+                          </div>
+                          <div class="bg-black/40 p-2 rounded">
+                              <h3 class="text-xl text-green-400 mb-2 text-center">Segmented</h3>
+                              <img src="/static/${data.segmented}" class="w-full rounded-lg border border-white/20">
+                          </div>
+                      </div>
+                      
+                      <div class="mt-6 p-4 bg-black/40 rounded-lg">
+                         <h4 class="text-lg font-bold text-white mb-2">Analysis:</h4>
+                         <ul class="list-disc list-inside text-gray-300">
+                             ${data.percentages.map(p => `<li>${p}</li>`).join('')}
+                         </ul>
+                      </div>
+
+                      <div class="mt-6 text-center">
+                          <button onclick="window.location.reload()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-bold">Close & Reset</button>
+                      </div>
+                  </div>
+              </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', resultHTML);
+            errorMessage.classList.add('hidden');
+          } else if (data.error) {
+            throw new Error(data.error);
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          errorMessage.textContent = "Error: " + error.message;
+          errorMessage.classList.remove('text-blue-400');
+          errorMessage.classList.add('text-red-400');
+        })
+        .finally(() => {
+          if (button) {
+            button.disabled = false;
+            button.textContent = button === segmentCurrentBtn ? 'Segment My Location' : 'Segment This Location';
+          }
+        });
+      }
+
+      // Error handling
+      function showError(message, element) {
+        element.textContent = message;
+        element.classList.remove('hidden');
+        element.classList.add('text-red-400');
+        setTimeout(() => element.classList.add('hidden'), 5000);
+      }
+    });
+  </script>
+</body>
+</html>

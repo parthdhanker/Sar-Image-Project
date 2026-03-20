@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Segmentation Result</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#0f172a] text-white min-h-screen flex flex-col items-center justify-center p-8 space-y-6">
+    <h1 class="text-4xl font-bold text-green-400">Segmentation Result</h1>
+
+    <div class="flex flex-col md:flex-row gap-12 items-center">
+        <div class="text-center">
+            <h2 class="text-xl font-semibold mb-2">Colorized Image</h2>
+            <img src="{{ url_for('static', path=colorized_filename) }}"
+                 alt="Colorized Image" 
+                 class="rounded-xl w-[256px] h-auto shadow-lg border border-white/20"
+                 style="image-rendering: auto;">
+        </div>
+
+        <div class="text-center">
+            <h2 class="text-xl font-semibold mb-2">Segmented Output</h2>
+            <img src="{{ url_for('static', path=segmented_filename) }}"
+                 alt="Segmented Image" 
+                 class="rounded-xl w-[256px] h-auto shadow-lg border border-white/20"
+                 style="image-rendering: pixelated;">
+        </div>
+    </div>
+
+    <div class="mt-4 bg-gray-800 rounded-xl p-4 shadow-lg border border-gray-700 text-white text-sm">
+        <h3 class="text-green-400 font-semibold mb-2 text-center">Class Legend</h3>
+        <div class="grid grid-cols-2 gap-x-6 gap-y-2">
+          <div class="flex items-center space-x-2">
+            <div class="w-4 h-4 rounded" style="background-color: rgb(255, 0, 0);"></div>
+            <span>Urban Land</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div class="w-4 h-4 rounded" style="background-color: rgb(0, 255, 0);"></div>
+            <span>Agriculture Land</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div class="w-4 h-4 rounded" style="background-color: rgb(160, 82, 45);"></div>
+            <span>Rangeland</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div class="w-4 h-4 rounded" style="background-color: rgb(0, 100, 0);"></div>
+            <span>Forest Land</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div class="w-4 h-4 rounded" style="background-color: rgb(0, 255, 255);"></div>
+            <span>Water</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div class="w-4 h-4 rounded" style="background-color: rgb(255, 255, 0);"></div>
+            <span>Barren Land</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div class="w-4 h-4 rounded" style="background-color: rgb(128, 128, 128);"></div>
+            <span>Unknown</span>
+          </div>
+        </div>
+    </div>
+
+    <div class="mt-8 text-left w-full max-w-md bg-white/10 p-4 rounded-xl shadow border border-white/10">
+        <h3 class="text-2xl font-semibold mb-4 text-center text-green-300">Land Use Breakdown</h3>
+        <ul class="space-y-2 text-lg text-gray-200">
+            {% for item in percentages %}
+                <li class="border-b border-gray-600 pb-1 last:border-0">{{ item }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="flex flex-wrap justify-center gap-6 mt-6">
+        <a href="{{ url_for('static', path=colorized_filename) }}" download
+           class="bg-blue-600 hover:bg-blue-700 px-5 py-2 rounded-lg text-white font-medium shadow transition">
+            Download Colorized
+        </a>
+        <a href="{{ url_for('static', path=segmented_filename) }}" download
+           class="bg-purple-600 hover:bg-purple-700 px-5 py-2 rounded-lg text-white font-medium shadow transition">
+            Download Segmented
+        </a>
+        <a href="/" class="bg-gray-600 hover:bg-gray-700 px-5 py-2 rounded-lg text-white font-medium shadow transition">
+            Start Over
+        </a>
+    </div>
+</body>
+</html>

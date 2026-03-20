@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload for Segmentation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-black text-white flex flex-col items-center justify-center h-screen px-4">
+    <h1 class="text-3xl font-bold mb-6">Segment Colorized Image</h1>
+
+    <form action="/segment" method="POST" enctype="multipart/form-data" class="bg-white/10 p-6 rounded-xl">
+        <input type="file" name="image" accept="image/*" required class="mb-4 p-2 rounded text-black">
+        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white py-2 px-6 rounded">
+            Upload & Segment
+        </button>
+    </form>
+</body>
+</html>

@@ -1,0 +1,57 @@
+# ── Python ────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+.Python
+
+# ── Virtual Environments ──────────────────────────────────────────
+.env
+.venv
+env/
+venv/
+ENV/
+
+# ── Jupyter ───────────────────────────────────────────────────────
+.ipynb_checkpoints/
+# Uncomment the line below if you don't want notebooks tracked
+# *.ipynb
+
+# ── User-generated content ────────────────────────────────────────
+# These folders are created at runtime; don't commit their contents
+app/static/uploads/*
+app/static/outputs/*
+app/static/segments/*
+# Keep the folders themselves tracked via .gitkeep
+!app/static/uploads/.gitkeep
+!app/static/outputs/.gitkeep
+!app/static/segments/.gitkeep
+
+# ── Large model files ─────────────────────────────────────────────
+# ONNX models can be 10–70 MB — use Git LFS or Azure Blob instead.
+# Comment these lines out only if you intentionally want to commit them.
+*.onnx
+
+# ── Logs ──────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── OS files ──────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE ───────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Azure / Docker secrets ────────────────────────────────────────
+.azure/
+*.env
+secrets.json
